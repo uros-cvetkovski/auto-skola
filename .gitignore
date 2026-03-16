@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+database/auto_skola.db
+.DS_Store

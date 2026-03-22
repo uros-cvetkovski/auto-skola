@@ -2,62 +2,89 @@ import customtkinter as ctk
 from tkinter import ttk, messagebox
 from models.instruktor import Instruktor
 
+BG_PRIMARY     = "#020617"
+BG_CARD        = "#0f172a"
+BORDER_DARK    = "#1e293b"
+BORDER_LIGHT   = "#334155"
+ACCENT_BLUE    = "#3b82f6"
+ACCENT_HOVER   = "#2563eb"
+TEXT_PRIMARY   = "#ffffff"
+TEXT_SECONDARY = "#94a3b8"
+TEXT_MUTED     = "#64748b"
+RED            = "#ef4444"
+RED_HOVER      = "#dc2626"
+
 
 class InstruktoriView(ctk.CTkFrame):
     def __init__(self, parent):
-        super().__init__(parent, fg_color="transparent")
+        super().__init__(parent, fg_color=BG_PRIMARY, corner_radius=0)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(2, weight=1)
         self._izabrani_id = None
         self._build_ui()
         self._ucitaj_podatke()
 
     def _build_ui(self):
-        # ── Naslov + dugme ──────────────────────────────────────────────────
-        vrh = ctk.CTkFrame(self, fg_color="transparent")
-        vrh.pack(fill="x", padx=30, pady=(30, 10))
+        # Header
+        header = ctk.CTkFrame(self, fg_color="transparent")
+        header.grid(row=0, column=0, sticky="ew", padx=32, pady=(32, 0))
+        ctk.CTkLabel(header, text="Instruktori",
+                     font=ctk.CTkFont(family="Arial", size=32, weight="bold"),
+                     text_color=TEXT_PRIMARY).pack(anchor="w")
 
-        ctk.CTkLabel(vrh, text="Instruktori",
-                     font=ctk.CTkFont(size=28, weight="bold")).pack(side="left")
+        # Toolbar
+        toolbar = ctk.CTkFrame(self, fg_color="transparent")
+        toolbar.grid(row=1, column=0, sticky="ew", padx=32, pady=(16, 0))
 
-        ctk.CTkButton(vrh, text="+ Dodaj instruktora", width=170,
+        ctk.CTkLabel(toolbar, text="Prikazi:",
+                     font=ctk.CTkFont(family="Arial", size=13),
+                     text_color=TEXT_SECONDARY).pack(side="left", padx=(0, 8))
+
+        self._filter_var = ctk.StringVar(value="Aktivni")
+        ctk.CTkSegmentedButton(toolbar,
+                               values=["Aktivni", "Svi"],
+                               variable=self._filter_var,
+                               fg_color=BG_CARD,
+                               selected_color=ACCENT_BLUE,
+                               selected_hover_color=ACCENT_HOVER,
+                               unselected_color=BG_CARD,
+                               unselected_hover_color=BORDER_DARK,
+                               text_color=TEXT_PRIMARY,
+                               command=lambda _: self._ucitaj_podatke()).pack(side="left")
+
+        ctk.CTkButton(toolbar, text="+ Dodaj instruktora", width=180,
+                      fg_color=ACCENT_BLUE, hover_color=ACCENT_HOVER,
+                      text_color=TEXT_PRIMARY,
+                      font=ctk.CTkFont(family="Arial", size=14),
+                      height=40, corner_radius=8,
                       command=self._otvori_formu_novi).pack(side="right")
 
-        # ── Filter ──────────────────────────────────────────────────────────
-        filter_frame = ctk.CTkFrame(self, fg_color="transparent")
-        filter_frame.pack(fill="x", padx=30, pady=(0, 12))
-
-        ctk.CTkLabel(filter_frame, text="Prikaži:").pack(side="left", padx=(0, 8))
-        self._filter_var = ctk.StringVar(value="Aktivni")
-        ctk.CTkSegmentedButton(
-            filter_frame,
-            values=["Aktivni", "Svi"],
-            variable=self._filter_var,
-            command=lambda _: self._ucitaj_podatke()
-        ).pack(side="left")
-
-        # ── Tabela ──────────────────────────────────────────────────────────
-        tabela_frame = ctk.CTkFrame(self, corner_radius=12)
-        tabela_frame.pack(fill="both", expand=True, padx=30, pady=(0, 10))
-
-        kolone = ("ID", "Ime", "Prezime", "Telefon", "Kategorija", "Status")
+        # Tabela
+        tabela_frame = ctk.CTkFrame(self, fg_color=BG_CARD,
+                                    border_color=BORDER_DARK, border_width=1,
+                                    corner_radius=12)
+        tabela_frame.grid(row=2, column=0, sticky="nsew", padx=32, pady=(16, 0))
+        tabela_frame.grid_rowconfigure(0, weight=1)
+        tabela_frame.grid_columnconfigure(0, weight=1)
 
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("Treeview",
-                        background="#2b2b2b", foreground="white",
-                        fieldbackground="#2b2b2b", rowheight=32,
-                        font=("Helvetica", 12))
+                        background=BG_CARD, foreground=TEXT_PRIMARY,
+                        fieldbackground=BG_CARD, rowheight=36,
+                        font=("Arial", 12), borderwidth=0)
         style.configure("Treeview.Heading",
-                        background="#1a73e8", foreground="white",
-                        font=("Helvetica", 12, "bold"))
+                        background=BORDER_DARK, foreground=TEXT_SECONDARY,
+                        font=("Arial", 12, "bold"), borderwidth=0)
         style.map("Treeview",
-                  background=[("selected", "#1a73e8")],
-                  foreground=[("selected", "white")])
+                  background=[("selected", ACCENT_BLUE)],
+                  foreground=[("selected", TEXT_PRIMARY)])
 
+        kolone = ("ID", "Ime", "Prezime", "Telefon", "Kategorija", "Status")
         self._tabela = ttk.Treeview(tabela_frame, columns=kolone,
                                     show="headings", selectmode="browse")
-
-        sirine = {"ID": 50, "Ime": 140, "Prezime": 150,
-                  "Telefon": 130, "Kategorija": 100, "Status": 100}
+        sirine = {"ID": 50, "Ime": 160, "Prezime": 170,
+                  "Telefon": 140, "Kategorija": 110, "Status": 110}
         for k in kolone:
             self._tabela.heading(k, text=k)
             self._tabela.column(k, width=sirine[k], anchor="center")
@@ -65,54 +92,49 @@ class InstruktoriView(ctk.CTkFrame):
         scrollbar = ttk.Scrollbar(tabela_frame, orient="vertical",
                                   command=self._tabela.yview)
         self._tabela.configure(yscrollcommand=scrollbar.set)
-        self._tabela.pack(side="left", fill="both", expand=True, padx=(8, 0), pady=8)
-        scrollbar.pack(side="right", fill="y", pady=8, padx=(0, 8))
+        self._tabela.grid(row=0, column=0, sticky="nsew", padx=(8, 0), pady=8)
+        scrollbar.grid(row=0, column=1, sticky="ns", pady=8, padx=(0, 8))
 
         self._tabela.bind("<<TreeviewSelect>>", self._na_selekciju)
         self._tabela.bind("<Double-1>", lambda _: self._otvori_formu_edit())
 
-        # ── Dugmad ──────────────────────────────────────────────────────────
+        # Dugmad
         dno = ctk.CTkFrame(self, fg_color="transparent")
-        dno.pack(fill="x", padx=30, pady=(0, 25))
+        dno.grid(row=3, column=0, sticky="ew", padx=32, pady=(12, 24))
 
-        self._btn_edit = ctk.CTkButton(dno, text="✏️  Izmeni", width=130,
-                                       state="disabled", command=self._otvori_formu_edit)
+        self._btn_edit = ctk.CTkButton(dno, text="Izmeni", width=120,
+                                       fg_color=BORDER_LIGHT, hover_color=BORDER_DARK,
+                                       text_color=TEXT_PRIMARY, height=38,
+                                       corner_radius=8, state="disabled",
+                                       command=self._otvori_formu_edit)
         self._btn_edit.pack(side="left", padx=(0, 8))
 
-        self._btn_obrisi = ctk.CTkButton(dno, text="🗑️  Obriši", width=130,
-                                          fg_color="#db4437", hover_color="#b03228",
-                                          state="disabled", command=self._obrisi)
+        self._btn_obrisi = ctk.CTkButton(dno, text="Obrisi", width=120,
+                                          fg_color=RED, hover_color=RED_HOVER,
+                                          text_color=TEXT_PRIMARY, height=38,
+                                          corner_radius=8, state="disabled",
+                                          command=self._obrisi)
         self._btn_obrisi.pack(side="left")
 
-        self._lbl_ukupno = ctk.CTkLabel(dno, text="", text_color="gray",
-                                         font=ctk.CTkFont(size=12))
+        self._lbl_ukupno = ctk.CTkLabel(dno, text="", text_color=TEXT_MUTED,
+                                         font=ctk.CTkFont(family="Arial", size=12))
         self._lbl_ukupno.pack(side="right")
-
-    # ── Punjenje tabele ─────────────────────────────────────────────────────
 
     def _ucitaj_podatke(self):
         self._tabela.delete(*self._tabela.get_children())
         samo_aktivni = self._filter_var.get() == "Aktivni"
         instruktori = Instruktor.get_all(samo_aktivni=samo_aktivni)
-
-        self._tabela.tag_configure("aktivan", background="#1a3a6a")
-        self._tabela.tag_configure("neaktivan", background="#3a3a3a")
-
         for i in instruktori:
-            tag = "aktivan" if i.aktivan else "neaktivan"
-            self._tabela.insert("", "end", iid=str(i.id), tags=(tag,), values=(
+            self._tabela.insert("", "end", iid=str(i.id), values=(
                 i.id, i.ime, i.prezime,
                 i.telefon or "—",
                 i.kategorija or "B",
                 "Aktivan" if i.aktivan else "Neaktivan"
             ))
-
         self._lbl_ukupno.configure(text=f"Ukupno: {len(instruktori)}")
         self._izabrani_id = None
         self._btn_edit.configure(state="disabled")
         self._btn_obrisi.configure(state="disabled")
-
-    # ── Selekcija ───────────────────────────────────────────────────────────
 
     def _na_selekciju(self, event=None):
         sel = self._tabela.selection()
@@ -124,8 +146,6 @@ class InstruktoriView(ctk.CTkFrame):
             self._izabrani_id = None
             self._btn_edit.configure(state="disabled")
             self._btn_obrisi.configure(state="disabled")
-
-    # ── Forma ───────────────────────────────────────────────────────────────
 
     def _otvori_formu_novi(self):
         self._otvori_formu(None)
@@ -140,75 +160,104 @@ class InstruktoriView(ctk.CTkFrame):
 
         prozor = ctk.CTkToplevel(self)
         prozor.title("Novi instruktor" if je_novi else "Izmena instruktora")
-        prozor.geometry("420x420")
+        prozor.geometry("480x540")
         prozor.resizable(False, False)
+        prozor.configure(fg_color=BG_PRIMARY)
         prozor.grab_set()
+        prozor.lift()
+        prozor.focus_force()
 
         ctk.CTkLabel(prozor,
                      text="Novi instruktor" if je_novi else "Izmena instruktora",
-                     font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(24, 16))
+                     font=ctk.CTkFont(family="Arial", size=22, weight="bold"),
+                     text_color=TEXT_PRIMARY).pack(anchor="w", padx=32, pady=(28, 4))
+        ctk.CTkLabel(prozor,
+                     text="Popunite podatke o instruktoru",
+                     font=ctk.CTkFont(family="Arial", size=13),
+                     text_color=TEXT_SECONDARY).pack(anchor="w", padx=32)
+        ctk.CTkFrame(prozor, height=1, fg_color=BORDER_DARK).pack(fill="x", padx=32, pady=(16, 0))
 
-        forma = ctk.CTkFrame(prozor, fg_color="transparent")
-        forma.pack(fill="both", expand=True, padx=30)
-        forma.columnconfigure(0, weight=1)
+        forma = ctk.CTkScrollableFrame(prozor, fg_color="transparent",
+                                        scrollbar_button_color=BORDER_DARK)
+        forma.pack(fill="both", expand=True, padx=32, pady=(12, 0))
+        forma.grid_columnconfigure(0, weight=1)
 
-        def polje(label, vrednost="", row=0):
-            ctk.CTkLabel(forma, text=label, anchor="w").grid(
-                row=row, column=0, sticky="w", pady=(8, 0))
-            entry = ctk.CTkEntry(forma, width=280)
-            entry.grid(row=row+1, column=0, sticky="ew", pady=(2, 0))
+        def polje(label, vrednost="", row=0, obavezno=False):
+            ctk.CTkLabel(forma, text=label + (" *" if obavezno else ""),
+                         anchor="w",
+                         font=ctk.CTkFont(family="Arial", size=13),
+                         text_color=TEXT_SECONDARY).grid(row=row, column=0, sticky="w", pady=(0, 4))
+            entry = ctk.CTkEntry(forma, height=40,
+                                  fg_color=BG_CARD, border_color=BORDER_DARK,
+                                  text_color=TEXT_PRIMARY)
+            entry.grid(row=row+1, column=0, sticky="ew", pady=(0, 12))
             if vrednost:
                 entry.insert(0, str(vrednost))
             return entry
 
-        e_ime = polje("Ime *", instruktor.ime if instruktor else "", 0)
-        e_prezime = polje("Prezime *", instruktor.prezime if instruktor else "", 2)
-        e_telefon = polje("Telefon", instruktor.telefon if instruktor else "", 4)
+        e_ime     = polje("Ime",     instruktor.ime      if instruktor else "", 0, True)
+        e_prezime = polje("Prezime", instruktor.prezime  if instruktor else "", 2, True)
+        e_telefon = polje("Telefon", instruktor.telefon  if instruktor else "", 4)
 
-        ctk.CTkLabel(forma, text="Kategorija", anchor="w").grid(
-            row=6, column=0, sticky="w", pady=(8, 0))
+        ctk.CTkLabel(forma, text="Kategorija", anchor="w",
+                     font=ctk.CTkFont(family="Arial", size=13),
+                     text_color=TEXT_SECONDARY).grid(row=6, column=0, sticky="w", pady=(0, 4))
         kat_var = ctk.StringVar(value=instruktor.kategorija if instruktor else "B")
         ctk.CTkOptionMenu(forma, variable=kat_var,
                           values=["A", "A1", "A2", "AM", "B", "B1", "C", "D"],
-                          width=280).grid(row=7, column=0, sticky="ew", pady=(2, 0))
+                          fg_color=BG_CARD, button_color=BORDER_LIGHT,
+                          button_hover_color=BORDER_DARK,
+                          text_color=TEXT_PRIMARY,
+                          height=40).grid(row=7, column=0, sticky="ew", pady=(0, 12))
 
-        ctk.CTkLabel(forma, text="Status", anchor="w").grid(
-            row=8, column=0, sticky="w", pady=(8, 0))
+        ctk.CTkLabel(forma, text="Status", anchor="w",
+                     font=ctk.CTkFont(family="Arial", size=13),
+                     text_color=TEXT_SECONDARY).grid(row=8, column=0, sticky="w", pady=(0, 4))
         aktivan_var = ctk.StringVar(
             value="Aktivan" if (instruktor.aktivan if instruktor else True) else "Neaktivan")
         ctk.CTkOptionMenu(forma, variable=aktivan_var,
                           values=["Aktivan", "Neaktivan"],
-                          width=280).grid(row=9, column=0, sticky="ew", pady=(2, 0))
+                          fg_color=BG_CARD, button_color=BORDER_LIGHT,
+                          button_hover_color=BORDER_DARK,
+                          text_color=TEXT_PRIMARY,
+                          height=40).grid(row=9, column=0, sticky="ew", pady=(0, 12))
+
+        ctk.CTkFrame(prozor, height=1, fg_color=BORDER_DARK).pack(fill="x", padx=32, pady=(8, 0))
+
+        dugmad_frame = ctk.CTkFrame(prozor, fg_color="transparent")
+        dugmad_frame.pack(fill="x", padx=32, pady=16)
+        dugmad_frame.grid_columnconfigure((0, 1), weight=1)
+
+        ctk.CTkButton(dugmad_frame, text="Otkazi",
+                      fg_color=BORDER_DARK, hover_color=BORDER_LIGHT,
+                      text_color=TEXT_PRIMARY, height=44, corner_radius=8,
+                      font=ctk.CTkFont(family="Arial", size=14),
+                      command=prozor.destroy).grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
         def sacuvaj():
-            ime = e_ime.get().strip()
+            ime     = e_ime.get().strip()
             prezime = e_prezime.get().strip()
             if not ime or not prezime:
-                messagebox.showerror("Greška", "Ime i prezime su obavezni!", parent=prozor)
+                messagebox.showerror("Greska", "Ime i prezime su obavezni!", parent=prozor)
                 return
-
             i = instruktor if instruktor else Instruktor()
-            i.ime = ime
-            i.prezime = prezime
-            i.telefon = e_telefon.get().strip() or None
+            i.ime       = ime
+            i.prezime   = prezime
+            i.telefon   = e_telefon.get().strip() or None
             i.kategorija = kat_var.get()
-            i.aktivan = 1 if aktivan_var.get() == "Aktivan" else 0
-
+            i.aktivan   = 1 if aktivan_var.get() == "Aktivan" else 0
             try:
                 i.sacuvaj()
                 prozor.destroy()
                 self._ucitaj_podatke()
             except Exception as ex:
-                messagebox.showerror("Greška", str(ex), parent=prozor)
+                messagebox.showerror("Greska", str(ex), parent=prozor)
 
-        dugmad = ctk.CTkFrame(prozor, fg_color="transparent")
-        dugmad.pack(pady=20)
-        ctk.CTkButton(dugmad, text="Otkaži", width=120, fg_color="gray",
-                      command=prozor.destroy).pack(side="left", padx=8)
-        ctk.CTkButton(dugmad, text="Sačuvaj", width=120,
-                      command=sacuvaj).pack(side="left", padx=8)
-
-    # ── Brisanje ────────────────────────────────────────────────────────────
+        ctk.CTkButton(dugmad_frame, text="Sacuvaj instruktora",
+                      fg_color=ACCENT_BLUE, hover_color=ACCENT_HOVER,
+                      text_color=TEXT_PRIMARY, height=44, corner_radius=8,
+                      font=ctk.CTkFont(family="Arial", size=14, weight="bold"),
+                      command=sacuvaj).grid(row=0, column=1, sticky="ew", padx=(8, 0))
 
     def _obrisi(self):
         if not self._izabrani_id:
@@ -216,12 +265,12 @@ class InstruktoriView(ctk.CTkFrame):
         i = Instruktor.get_by_id(self._izabrani_id)
         if not i:
             return
-        if messagebox.askyesno("Potvrda", f"Obriši instruktora {i.ime} {i.prezime}?"):
+        if messagebox.askyesno("Potvrda", f"Obrisi instruktora {i.ime} {i.prezime}?"):
             try:
                 i.obrisi()
                 self._ucitaj_podatke()
             except Exception as ex:
-                messagebox.showerror("Greška", str(ex))
+                messagebox.showerror("Greska", str(ex))
 
     def osvezi(self):
         self._ucitaj_podatke()

@@ -19,51 +19,52 @@ class KandidatiView(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color=BG_PRIMARY, corner_radius=0)
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
         self._izabrani_id = None
         self._build_ui()
         self._ucitaj_podatke()
 
     def _build_ui(self):
-        # ── Header ───────────────────────────────────────────────────────────
+        # ── Header (samo naslov) ─────────────────────────────────────────────
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.grid(row=0, column=0, sticky="ew", padx=32, pady=(32, 0))
-        header.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(header, text="Kandidati",
                      font=ctk.CTkFont(family="Arial", size=32, weight="bold"),
-                     text_color=TEXT_PRIMARY).grid(row=0, column=0, sticky="w")
+                     text_color=TEXT_PRIMARY).pack(anchor="w")
 
-        ctk.CTkButton(header, text="+ Dodaj kandidata", width=170,
-                      fg_color=ACCENT_BLUE, hover_color=ACCENT_HOVER,
-                      font=ctk.CTkFont(family="Arial", size=14),
-                      height=40, corner_radius=8,
-                      command=self._otvori_formu_novi).grid(row=0, column=1, sticky="e")
-
-        # ── Pretraga ─────────────────────────────────────────────────────────
-        pretraga_frame = ctk.CTkFrame(self, fg_color="transparent")
-        pretraga_frame.grid(row=1, column=0, sticky="ew", padx=32, pady=(16, 0))
+        # ── Search + filter + dugme u istom redu ────────────────────────────
+        toolbar = ctk.CTkFrame(self, fg_color="transparent")
+        toolbar.grid(row=1, column=0, sticky="ew", padx=32, pady=(16, 0))
 
         self._pretraga_var = ctk.StringVar()
         self._pretraga_var.trace_add("write", lambda *_: self._pretrazi())
 
-        ctk.CTkEntry(pretraga_frame,
-                     placeholder_text="🔍  Pretraži po imenu, prezimenu, JMBG...",
+        ctk.CTkEntry(toolbar,
+                     placeholder_text="Pretrazi po imenu, prezimenu, JMBG...",
                      textvariable=self._pretraga_var,
                      fg_color=BG_CARD, border_color=BORDER_DARK,
                      text_color=TEXT_PRIMARY,
                      placeholder_text_color=TEXT_MUTED,
-                     height=40, width=380).pack(side="left")
+                     height=40, width=340).pack(side="left")
 
         self._filter_var = ctk.StringVar(value="Svi")
-        ctk.CTkOptionMenu(pretraga_frame,
+        ctk.CTkOptionMenu(toolbar,
                           variable=self._filter_var,
                           values=["Svi", "aktivan", "polozio", "odustao"],
                           fg_color=BG_CARD, button_color=BORDER_LIGHT,
                           button_hover_color=BORDER_DARK,
                           text_color=TEXT_PRIMARY,
-                          width=140, height=40,
-                          command=lambda _: self._pretrazi()).pack(side="left", padx=(12, 0))
+                          width=130, height=40,
+                          command=lambda _: self._pretrazi()).pack(side="left", padx=(10, 0))
+
+        # Dugme desno u istom redu
+        ctk.CTkButton(toolbar, text="+ Dodaj kandidata", width=170,
+                      fg_color=ACCENT_BLUE, hover_color=ACCENT_HOVER,
+                      text_color=TEXT_PRIMARY,
+                      font=ctk.CTkFont(family="Arial", size=14),
+                      height=40, corner_radius=8,
+                      command=self._otvori_formu_novi).pack(side="right")
 
         # ── Tabela ───────────────────────────────────────────────────────────
         tabela_frame = ctk.CTkFrame(self, fg_color=BG_CARD,
@@ -72,7 +73,6 @@ class KandidatiView(ctk.CTkFrame):
         tabela_frame.grid(row=2, column=0, sticky="nsew", padx=32, pady=(16, 0))
         tabela_frame.grid_rowconfigure(0, weight=1)
         tabela_frame.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(2, weight=1)
 
         style = ttk.Style()
         style.theme_use("clam")
@@ -106,18 +106,18 @@ class KandidatiView(ctk.CTkFrame):
         self._tabela.bind("<<TreeviewSelect>>", self._na_selekciju)
         self._tabela.bind("<Double-1>", lambda _: self._otvori_formu_edit())
 
-        # ── Dugmad ───────────────────────────────────────────────────────────
+        # ── Dugmad ispod tabele ──────────────────────────────────────────────
         dno = ctk.CTkFrame(self, fg_color="transparent")
         dno.grid(row=3, column=0, sticky="ew", padx=32, pady=(12, 24))
 
-        self._btn_edit = ctk.CTkButton(dno, text="✏️  Izmeni", width=130,
+        self._btn_edit = ctk.CTkButton(dno, text="Izmeni", width=120,
                                        fg_color=BORDER_LIGHT, hover_color=BORDER_DARK,
                                        text_color=TEXT_PRIMARY, height=38,
                                        corner_radius=8, state="disabled",
                                        command=self._otvori_formu_edit)
         self._btn_edit.pack(side="left", padx=(0, 8))
 
-        self._btn_obrisi = ctk.CTkButton(dno, text="🗑️  Obriši", width=130,
+        self._btn_obrisi = ctk.CTkButton(dno, text="Obrisi", width=120,
                                           fg_color=RED, hover_color=RED_HOVER,
                                           text_color=TEXT_PRIMARY, height=38,
                                           corner_radius=8, state="disabled",
@@ -135,19 +135,12 @@ class KandidatiView(ctk.CTkFrame):
         self._tabela.delete(*self._tabela.get_children())
         if kandidati is None:
             kandidati = Kandidat.get_all()
-
-        self._tabela.tag_configure("aktivan",  background="#0f172a")
-        self._tabela.tag_configure("polozio",  background="#0f172a")
-        self._tabela.tag_configure("odustao",  background="#0f172a")
-
         for k in kandidati:
-            self._tabela.insert("", "end", iid=str(k.id),
-                                tags=(k.status or "",), values=(
+            self._tabela.insert("", "end", iid=str(k.id), values=(
                 k.id, k.ime, k.prezime, k.jmbg,
                 k.telefon or "—", k.email or "—",
                 k.datum_upisa or "—", k.status or "—"
             ))
-
         self._lbl_ukupno.configure(text=f"Ukupno: {len(kandidati)} kandidata")
         self._izabrani_id = None
         self._btn_edit.configure(state="disabled")
@@ -161,8 +154,6 @@ class KandidatiView(ctk.CTkFrame):
             rezultati = [k for k in rezultati if k.status == filter_status]
         self._ucitaj_podatke(rezultati)
 
-    # ── Selekcija ────────────────────────────────────────────────────────────
-
     def _na_selekciju(self, event=None):
         sel = self._tabela.selection()
         if sel:
@@ -173,8 +164,6 @@ class KandidatiView(ctk.CTkFrame):
             self._izabrani_id = None
             self._btn_edit.configure(state="disabled")
             self._btn_obrisi.configure(state="disabled")
-
-    # ── Forma ────────────────────────────────────────────────────────────────
 
     def _otvori_formu_novi(self):
         self._otvori_formu(None)
@@ -196,46 +185,41 @@ class KandidatiView(ctk.CTkFrame):
         prozor.lift()
         prozor.focus_force()
 
-        # Naslov
         ctk.CTkLabel(prozor,
                      text="Novi kandidat" if je_novi else "Izmena kandidata",
                      font=ctk.CTkFont(family="Arial", size=22, weight="bold"),
                      text_color=TEXT_PRIMARY).pack(anchor="w", padx=32, pady=(28, 4))
-
         ctk.CTkLabel(prozor,
-                     text="Popunite podatke o kandidatu" if je_novi else "Izmenite podatke kandidata",
+                     text="Popunite podatke o kandidatu",
                      font=ctk.CTkFont(family="Arial", size=13),
-                     text_color=TEXT_SECONDARY).pack(anchor="w", padx=32, pady=(0, 20))
+                     text_color=TEXT_SECONDARY).pack(anchor="w", padx=32)
+        ctk.CTkFrame(prozor, height=1, fg_color=BORDER_DARK).pack(fill="x", padx=32, pady=(16, 0))
 
-        ctk.CTkFrame(prozor, height=1, fg_color=BORDER_DARK).pack(fill="x", padx=32, pady=(0, 20))
-
-        # Forma
         forma = ctk.CTkScrollableFrame(prozor, fg_color="transparent",
                                         scrollbar_button_color=BORDER_DARK)
-        forma.pack(fill="both", expand=True, padx=32)
+        forma.pack(fill="both", expand=True, padx=32, pady=(12, 0))
         forma.grid_columnconfigure(0, weight=1)
 
         def polje(label, vrednost="", row=0, obavezno=False):
-            oznaka = label + (" *" if obavezno else "")
-            ctk.CTkLabel(forma, text=oznaka, anchor="w",
+            ctk.CTkLabel(forma, text=label + (" *" if obavezno else ""),
+                         anchor="w",
                          font=ctk.CTkFont(family="Arial", size=13),
-                         text_color=TEXT_SECONDARY).grid(
-                row=row, column=0, sticky="w", pady=(0, 4))
+                         text_color=TEXT_SECONDARY).grid(row=row, column=0, sticky="w", pady=(0, 4))
             entry = ctk.CTkEntry(forma, height=40,
                                   fg_color=BG_CARD, border_color=BORDER_DARK,
-                                  text_color=TEXT_PRIMARY,
-                                  placeholder_text_color=TEXT_MUTED)
-            entry.grid(row=row+1, column=0, sticky="ew", pady=(0, 14))
+                                  text_color=TEXT_PRIMARY)
+            entry.grid(row=row+1, column=0, sticky="ew", pady=(0, 12))
             if vrednost:
                 entry.insert(0, str(vrednost))
             return entry
 
-        e_ime      = polje("Ime",      kandidat.ime      if kandidat else "", 0,  obavezno=True)
-        e_prezime  = polje("Prezime",  kandidat.prezime  if kandidat else "", 2,  obavezno=True)
-        e_jmbg     = polje("JMBG",     kandidat.jmbg     if kandidat else "", 4,  obavezno=True)
-        e_telefon  = polje("Telefon",  kandidat.telefon  if kandidat else "", 6)
-        e_email    = polje("Email",    kandidat.email    if kandidat else "", 8)
-        e_datum    = polje("Datum upisa (YYYY-MM-DD)", kandidat.datum_upisa if kandidat else "", 10)
+        e_ime     = polje("Ime",     kandidat.ime      if kandidat else "", 0,  True)
+        e_prezime = polje("Prezime", kandidat.prezime  if kandidat else "", 2,  True)
+        e_jmbg    = polje("JMBG",    kandidat.jmbg     if kandidat else "", 4,  True)
+        e_telefon = polje("Telefon", kandidat.telefon  if kandidat else "", 6)
+        e_email   = polje("Email",   kandidat.email    if kandidat else "", 8)
+        e_datum   = polje("Datum upisa (YYYY-MM-DD)",
+                          kandidat.datum_upisa if kandidat else "", 10)
 
         ctk.CTkLabel(forma, text="Status", anchor="w",
                      font=ctk.CTkFont(family="Arial", size=13),
@@ -246,19 +230,17 @@ class KandidatiView(ctk.CTkFrame):
                           fg_color=BG_CARD, button_color=BORDER_LIGHT,
                           button_hover_color=BORDER_DARK,
                           text_color=TEXT_PRIMARY,
-                          height=40).grid(row=13, column=0, sticky="ew", pady=(0, 14))
+                          height=40).grid(row=13, column=0, sticky="ew", pady=(0, 12))
 
-        # ── Dugmad ───────────────────────────────────────────────────────────
         ctk.CTkFrame(prozor, height=1, fg_color=BORDER_DARK).pack(fill="x", padx=32, pady=(8, 0))
 
         dugmad_frame = ctk.CTkFrame(prozor, fg_color="transparent")
-        dugmad_frame.pack(fill="x", padx=32, pady=20)
+        dugmad_frame.pack(fill="x", padx=32, pady=16)
         dugmad_frame.grid_columnconfigure((0, 1), weight=1)
 
-        ctk.CTkButton(dugmad_frame, text="Otkaži",
+        ctk.CTkButton(dugmad_frame, text="Otkazi",
                       fg_color=BORDER_DARK, hover_color=BORDER_LIGHT,
-                      text_color=TEXT_PRIMARY,
-                      height=44, corner_radius=8,
+                      text_color=TEXT_PRIMARY, height=44, corner_radius=8,
                       font=ctk.CTkFont(family="Arial", size=14),
                       command=prozor.destroy).grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
@@ -266,13 +248,9 @@ class KandidatiView(ctk.CTkFrame):
             ime     = e_ime.get().strip()
             prezime = e_prezime.get().strip()
             jmbg    = e_jmbg.get().strip()
-
             if not ime or not prezime or not jmbg:
-                messagebox.showerror("Greška",
-                                     "Ime, prezime i JMBG su obavezni!",
-                                     parent=prozor)
+                messagebox.showerror("Greska", "Ime, prezime i JMBG su obavezni!", parent=prozor)
                 return
-
             k = kandidat if kandidat else Kandidat()
             k.ime         = ime
             k.prezime     = prezime
@@ -281,23 +259,18 @@ class KandidatiView(ctk.CTkFrame):
             k.email       = e_email.get().strip() or None
             k.datum_upisa = e_datum.get().strip() or None
             k.status      = status_var.get()
-
             try:
                 k.sacuvaj()
                 prozor.destroy()
                 self._ucitaj_podatke()
             except Exception as ex:
-                messagebox.showerror("Greška pri čuvanju", str(ex), parent=prozor)
+                messagebox.showerror("Greska pri cuvanju", str(ex), parent=prozor)
 
-        ctk.CTkButton(dugmad_frame,
-                      text="✓  Sačuvaj kandidata",
+        ctk.CTkButton(dugmad_frame, text="Sacuvaj kandidata",
                       fg_color=ACCENT_BLUE, hover_color=ACCENT_HOVER,
-                      text_color=TEXT_PRIMARY,
-                      height=44, corner_radius=8,
+                      text_color=TEXT_PRIMARY, height=44, corner_radius=8,
                       font=ctk.CTkFont(family="Arial", size=14, weight="bold"),
                       command=sacuvaj).grid(row=0, column=1, sticky="ew", padx=(8, 0))
-
-    # ── Brisanje ─────────────────────────────────────────────────────────────
 
     def _obrisi(self):
         if not self._izabrani_id:
@@ -305,13 +278,12 @@ class KandidatiView(ctk.CTkFrame):
         k = Kandidat.get_by_id(self._izabrani_id)
         if not k:
             return
-        if messagebox.askyesno("Potvrda brisanja",
-                               f"Da li ste sigurni da želite da obrišete\n{k.ime} {k.prezime}?"):
+        if messagebox.askyesno("Potvrda", f"Obrisi kandidata {k.ime} {k.prezime}?"):
             try:
                 k.obrisi()
                 self._ucitaj_podatke()
             except Exception as ex:
-                messagebox.showerror("Greška", str(ex))
+                messagebox.showerror("Greska", str(ex))
 
     def osvezi(self):
         self._ucitaj_podatke()

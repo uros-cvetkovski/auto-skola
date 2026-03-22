@@ -3,66 +3,78 @@ from models.kandidat import Kandidat
 from models.instruktor import Instruktor
 from models.cas_ispit import Cas, Ispit
 
+BG_PRIMARY     = "#020617"
+BG_CARD        = "#0f172a"
+BORDER_DARK    = "#1e293b"
+TEXT_PRIMARY   = "#ffffff"
+TEXT_SECONDARY = "#94a3b8"
+TEXT_MUTED     = "#64748b"
+
+BLUE       = "#3b82f6"
+BLUE_BG    = "#1e3a5f"
+GREEN      = "#22c55e"
+GREEN_BG   = "#14532d"
+AMBER      = "#f59e0b"
+AMBER_BG   = "#78350f"
+RED        = "#ef4444"
+RED_BG     = "#7f1d1d"
+
 
 class DashboardView(ctk.CTkFrame):
     def __init__(self, parent):
-        super().__init__(parent, fg_color="transparent")
+        super().__init__(parent, fg_color=BG_PRIMARY, corner_radius=0)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
         self._build_ui()
 
     def _build_ui(self):
-        # Naslov
-        naslov = ctk.CTkLabel(
-            self,
-            text="Dashboard",
-            font=ctk.CTkFont(size=28, weight="bold")
-        )
-        naslov.pack(anchor="w", padx=30, pady=(30, 5))
+        # ── Header ───────────────────────────────────────────────────────────
+        header = ctk.CTkFrame(self, fg_color="transparent")
+        header.grid(row=0, column=0, sticky="ew", padx=32, pady=(32, 24))
 
-        podnaslov = ctk.CTkLabel(
-            self,
-            text="Pregled stanja auto škole",
-            font=ctk.CTkFont(size=14),
-            text_color="gray"
-        )
-        podnaslov.pack(anchor="w", padx=30, pady=(0, 25))
+        ctk.CTkLabel(header, text="Dashboard",
+                     font=ctk.CTkFont(family="Arial", size=32, weight="bold"),
+                     text_color=TEXT_PRIMARY).pack(anchor="w")
+        ctk.CTkLabel(header, text="Pregled stanja auto škole",
+                     font=ctk.CTkFont(family="Arial", size=14),
+                     text_color=TEXT_SECONDARY).pack(anchor="w", pady=(4, 0))
 
-        # Grid za kartice
-        kartice_frame = ctk.CTkFrame(self, fg_color="transparent")
-        kartice_frame.pack(fill="x", padx=30)
+        # ── Scroll container ─────────────────────────────────────────────────
+        scroll = ctk.CTkScrollableFrame(self, fg_color="transparent",
+                                        scrollbar_button_color=BORDER_DARK)
+        scroll.grid(row=1, column=0, sticky="nsew", padx=32, pady=(0, 32))
+        scroll.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="col")
 
-        kartice_frame.columnconfigure((0, 1, 2, 3), weight=1, uniform="col")
+        # ── Stat kartice ─────────────────────────────────────────────────────
+        kartice_data = [
+            ("👥", "Aktivni kandidati", self._aktivni_kandidati(), BLUE, BLUE_BG),
+            ("✅", "Položili",          self._polozili(),           GREEN, GREEN_BG),
+            ("🎓", "Instruktori",       self._aktivni_instruktori(), AMBER, AMBER_BG),
+            ("📅", "Časovi danas",      self._casovi_danas(),       RED, RED_BG),
+        ]
 
-        self._stat_kartica(kartice_frame, "👤 Aktivni kandidati", self._aktivni_kandidati(), "#1a73e8", 0)
-        self._stat_kartica(kartice_frame, "✅ Položili", self._polozili(), "#0f9d58", 1)
-        self._stat_kartica(kartice_frame, "👨‍🏫 Instruktori", self._aktivni_instruktori(), "#f4b400", 2)
-        self._stat_kartica(kartice_frame, "📅 Časovi danas", self._casovi_danas(), "#db4437", 3)
+        for col, (ikona, label, vrednost, boja, boja_bg) in enumerate(kartice_data):
+            self._stat_kartica(scroll, ikona, label, vrednost, boja, boja_bg, col)
 
-        # Separator
-        sep = ctk.CTkFrame(self, height=2, fg_color="#e0e0e0")
-        sep.pack(fill="x", padx=30, pady=25)
+        # ── Donja sekcija ────────────────────────────────────────────────────
+        donji = ctk.CTkFrame(scroll, fg_color="transparent")
+        donji.grid(row=1, column=0, columnspan=4, sticky="ew", pady=(24, 0))
+        donji.grid_columnconfigure((0, 1), weight=1, uniform="col")
 
-        # Donji red — kandidati po statusu + poslednji ispiti
-        donji_frame = ctk.CTkFrame(self, fg_color="transparent")
-        donji_frame.pack(fill="both", expand=True, padx=30, pady=(0, 30))
-        donji_frame.columnconfigure(0, weight=1)
-        donji_frame.columnconfigure(1, weight=1)
+        self._kartica_statusi(donji)
+        self._kartica_ispiti(donji)
 
-        self._kartica_statusi(donji_frame)
-        self._kartica_ispiti(donji_frame)
-
-    # ── Pomocne metode za podatke ───────────────────────────────────────────
+    # ── Podatci ─────────────────────────────────────────────────────────────
 
     def _aktivni_kandidati(self):
         try:
-            statusi = Kandidat.broj_po_statusu()
-            return str(statusi.get("aktivan", 0))
+            return str(Kandidat.broj_po_statusu().get("aktivan", 0))
         except Exception:
             return "—"
 
     def _polozili(self):
         try:
-            statusi = Kandidat.broj_po_statusu()
-            return str(statusi.get("polozio", 0))
+            return str(Kandidat.broj_po_statusu().get("polozio", 0))
         except Exception:
             return "—"
 
@@ -76,107 +88,136 @@ class DashboardView(ctk.CTkFrame):
         try:
             from datetime import date
             danas = date.today().isoformat()
-            svi = Cas.get_all()
-            return str(sum(1 for c in svi if c.datum == danas and c.status == "zakazan"))
+            return str(sum(1 for c in Cas.get_all()
+                           if c.datum == danas and c.status == "zakazan"))
         except Exception:
             return "—"
 
-    # ── Gradnja kartica ─────────────────────────────────────────────────────
+    # ── Gradnja ─────────────────────────────────────────────────────────────
 
-    def _stat_kartica(self, parent, tekst, vrednost, boja, col):
-        kartica = ctk.CTkFrame(parent, corner_radius=12, fg_color=boja)
-        kartica.grid(row=0, column=col, padx=8, pady=8, sticky="ew")
+    def _stat_kartica(self, parent, ikona, label, vrednost, boja, boja_bg, col):
+        kartica = ctk.CTkFrame(parent, fg_color=BG_CARD,
+                               border_color=BORDER_DARK, border_width=1,
+                               corner_radius=12)
+        kartica.grid(row=0, column=col, padx=(0 if col == 0 else 12, 0),
+                     pady=0, sticky="ew")
 
-        ctk.CTkLabel(
-            kartica,
-            text=vrednost,
-            font=ctk.CTkFont(size=36, weight="bold"),
-            text_color="white"
-        ).pack(pady=(18, 4))
+        inner = ctk.CTkFrame(kartica, fg_color="transparent")
+        inner.pack(fill="both", expand=True, padx=24, pady=24)
 
-        ctk.CTkLabel(
-            kartica,
-            text=tekst,
-            font=ctk.CTkFont(size=13),
-            text_color="white"
-        ).pack(pady=(0, 18))
+        # Ikonica
+        ikon_frame = ctk.CTkFrame(inner, width=48, height=48,
+                                  fg_color=boja_bg, corner_radius=8)
+        ikon_frame.pack(anchor="w")
+        ikon_frame.pack_propagate(False)
+        ctk.CTkLabel(ikon_frame, text=ikona,
+                     font=ctk.CTkFont(size=22),
+                     text_color=boja).pack(expand=True)
+
+        # Broj
+        ctk.CTkLabel(inner, text=vrednost,
+                     font=ctk.CTkFont(family="Arial", size=36, weight="bold"),
+                     text_color=TEXT_PRIMARY).pack(anchor="w", pady=(12, 4))
+
+        # Label
+        ctk.CTkLabel(inner, text=label,
+                     font=ctk.CTkFont(family="Arial", size=12),
+                     text_color=TEXT_SECONDARY).pack(anchor="w")
 
     def _kartica_statusi(self, parent):
-        frame = ctk.CTkFrame(parent, corner_radius=12)
-        frame.grid(row=0, column=0, padx=(0, 10), pady=0, sticky="nsew")
+        frame = ctk.CTkFrame(parent, fg_color=BG_CARD,
+                             border_color=BORDER_DARK, border_width=1,
+                             corner_radius=12)
+        frame.grid(row=0, column=0, padx=(0, 12), sticky="nsew")
 
-        ctk.CTkLabel(
-            frame,
-            text="Kandidati po statusu",
-            font=ctk.CTkFont(size=16, weight="bold")
-        ).pack(anchor="w", padx=20, pady=(18, 10))
+        ctk.CTkLabel(frame, text="Kandidati po statusu",
+                     font=ctk.CTkFont(family="Arial", size=18, weight="bold"),
+                     text_color=TEXT_PRIMARY).pack(anchor="w", padx=24, pady=(24, 16))
+
+        ctk.CTkFrame(frame, height=1, fg_color=BORDER_DARK).pack(
+            fill="x", padx=24, pady=(0, 12))
 
         try:
             statusi = Kandidat.broj_po_statusu()
-            boje = {"aktivan": "#1a73e8", "polozio": "#0f9d58", "odustao": "#db4437"}
+            boje = {"aktivan": BLUE, "polozio": GREEN, "odustao": RED}
             labele = {"aktivan": "Aktivni", "polozio": "Položili", "odustao": "Odustali"}
 
-            for status, broj in statusi.items():
-                red = ctk.CTkFrame(frame, fg_color="transparent")
-                red.pack(fill="x", padx=20, pady=4)
+            if statusi:
+                for status, broj in statusi.items():
+                    red = ctk.CTkFrame(frame, fg_color="transparent")
+                    red.pack(fill="x", padx=24, pady=6)
 
-                boja = boje.get(status, "#888888")
-                ind = ctk.CTkFrame(red, width=12, height=12, corner_radius=6, fg_color=boja)
-                ind.pack(side="left", padx=(0, 8))
+                    levo = ctk.CTkFrame(red, fg_color="transparent")
+                    levo.pack(side="left", fill="x", expand=True)
 
-                ctk.CTkLabel(red, text=labele.get(status, status),
-                             font=ctk.CTkFont(size=13)).pack(side="left")
-                ctk.CTkLabel(red, text=str(broj),
-                             font=ctk.CTkFont(size=13, weight="bold")).pack(side="right")
+                    ind = ctk.CTkFrame(levo, width=10, height=10,
+                                       corner_radius=5,
+                                       fg_color=boje.get(status, TEXT_MUTED))
+                    ind.pack(side="left", padx=(0, 10))
+                    ind.pack_propagate(False)
 
-            if not statusi:
-                ctk.CTkLabel(frame, text="Nema podataka", text_color="gray").pack(pady=10)
+                    ctk.CTkLabel(levo, text=labele.get(status, status),
+                                 font=ctk.CTkFont(family="Arial", size=14),
+                                 text_color=TEXT_SECONDARY).pack(side="left")
+
+                    ctk.CTkLabel(red, text=str(broj),
+                                 font=ctk.CTkFont(family="Arial", size=14, weight="bold"),
+                                 text_color=TEXT_PRIMARY).pack(side="right")
+            else:
+                ctk.CTkLabel(frame, text="Nema podataka",
+                             font=ctk.CTkFont(family="Arial", size=14),
+                             text_color=TEXT_MUTED).pack(expand=True, pady=40)
 
         except Exception as e:
-            ctk.CTkLabel(frame, text=f"Greška: {e}", text_color="red").pack(pady=10)
+            ctk.CTkLabel(frame, text=f"Greška: {e}",
+                         text_color=RED).pack(pady=20)
 
-        ctk.CTkFrame(frame, height=1).pack(fill="x", padx=20, pady=(10, 18))
+        ctk.CTkFrame(frame, height=1).pack(fill="x", padx=24, pady=(12, 24))
 
     def _kartica_ispiti(self, parent):
-        frame = ctk.CTkFrame(parent, corner_radius=12)
-        frame.grid(row=0, column=1, padx=(10, 0), pady=0, sticky="nsew")
+        frame = ctk.CTkFrame(parent, fg_color=BG_CARD,
+                             border_color=BORDER_DARK, border_width=1,
+                             corner_radius=12)
+        frame.grid(row=0, column=1, padx=(12, 0), sticky="nsew")
 
-        ctk.CTkLabel(
-            frame,
-            text="Poslednji ispiti",
-            font=ctk.CTkFont(size=16, weight="bold")
-        ).pack(anchor="w", padx=20, pady=(18, 10))
+        ctk.CTkLabel(frame, text="Poslednji ispiti",
+                     font=ctk.CTkFont(family="Arial", size=18, weight="bold"),
+                     text_color=TEXT_PRIMARY).pack(anchor="w", padx=24, pady=(24, 16))
+
+        ctk.CTkFrame(frame, height=1, fg_color=BORDER_DARK).pack(
+            fill="x", padx=24, pady=(0, 12))
 
         try:
-            ispiti = Ispit.get_all()
-            poslednji = ispiti[-5:] if len(ispiti) >= 5 else ispiti
-            poslednji = list(reversed(poslednji))
+            ispiti = list(reversed(Ispit.get_all()[-5:]))
+            boje_r = {"polozio": GREEN, "pao": RED, "ceka": AMBER}
 
-            boje_rezultat = {"polozio": "#0f9d58", "pao": "#db4437", "ceka": "#f4b400"}
+            if ispiti:
+                for ispit in ispiti:
+                    red = ctk.CTkFrame(frame, fg_color="transparent")
+                    red.pack(fill="x", padx=24, pady=6)
 
-            for ispit in poslednji:
-                red = ctk.CTkFrame(frame, fg_color="transparent")
-                red.pack(fill="x", padx=20, pady=3)
+                    ime = f"{ispit.kandidat_ime or ''} {ispit.kandidat_prezime or ''}".strip() \
+                          or f"ID {ispit.kandidat_id}"
+                    ctk.CTkLabel(red, text=ime,
+                                 font=ctk.CTkFont(family="Arial", size=14),
+                                 text_color=TEXT_SECONDARY).pack(side="left")
 
-                ime = f"{ispit.kandidat_ime or ''} {ispit.kandidat_prezime or ''}".strip() or f"ID {ispit.kandidat_id}"
-                ctk.CTkLabel(red, text=ime,
-                             font=ctk.CTkFont(size=12)).pack(side="left")
-
-                boja = boje_rezultat.get(ispit.rezultat, "#888888")
-                ctk.CTkLabel(red, text=ispit.rezultat.upper(),
-                             font=ctk.CTkFont(size=11, weight="bold"),
-                             text_color=boja).pack(side="right")
-
-            if not poslednji:
-                ctk.CTkLabel(frame, text="Nema ispita", text_color="gray").pack(pady=10)
+                    boja = boje_r.get(ispit.rezultat, TEXT_MUTED)
+                    ctk.CTkLabel(red, text=ispit.rezultat.upper(),
+                                 font=ctk.CTkFont(family="Arial", size=12, weight="bold"),
+                                 text_color=boja).pack(side="right")
+            else:
+                ctk.CTkLabel(frame, text="Nema ispita",
+                             font=ctk.CTkFont(family="Arial", size=14),
+                             text_color=TEXT_MUTED).pack(expand=True, pady=40)
 
         except Exception as e:
-            ctk.CTkLabel(frame, text=f"Greška: {e}", text_color="red").pack(pady=10)
+            ctk.CTkLabel(frame, text=f"Greška: {e}",
+                         text_color=RED).pack(pady=20)
 
-        ctk.CTkFrame(frame, height=1).pack(fill="x", padx=20, pady=(10, 18))
+        ctk.CTkFrame(frame, height=1).pack(fill="x", padx=24, pady=(12, 24))
 
     def osvezi(self):
-        """Poziva se kada se vrati na dashboard — rebuilds UI sa svežim podacima."""
-        for widget in self.winfo_children():
-            widget.destroy()
+        for w in self.winfo_children():
+            w.destroy()
         self._build_ui()

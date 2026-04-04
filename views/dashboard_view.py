@@ -1,4 +1,6 @@
 import customtkinter as ctk
+from PIL import Image
+import os
 from models.kandidat import Kandidat
 from models.instruktor import Instruktor
 from models.cas_ispit import Cas, Ispit
@@ -19,12 +21,29 @@ AMBER_BG  = "#78350f"
 RED       = "#ef4444"
 RED_BG    = "#7f1d1d"
 
+ICONS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "icons")
+
+def load_icon(name: str, size=(22, 22)):
+    path = os.path.join(ICONS_DIR, f"{name}.png")
+    if not os.path.exists(path):
+        return None
+    img = Image.open(path).convert("RGBA")
+    return ctk.CTkImage(light_image=img, dark_image=img, size=size)
+
 
 class DashboardView(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, fg_color=BG_PRIMARY, corner_radius=0)
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
+
+        self._ikone = {
+            "kandidati":   load_icon("kandidati"),
+            "polozili":    load_icon("kandidati"),
+            "instruktori": load_icon("instruktori"),
+            "casovi":      load_icon("casovi"),
+        }
+
         self._build_ui()
 
     def _build_ui(self):
@@ -44,21 +63,14 @@ class DashboardView(ctk.CTkFrame):
         scroll.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="col")
 
         kartice_data = [
-            ("U+", "Aktivni kandidati", self._aktivni_kandidati(), BLUE,  BLUE_BG),
-            ("OK", "Položili",          self._polozili(),           GREEN, GREEN_BG),
-            ("GR", "Instruktori",       self._aktivni_instruktori(), AMBER, AMBER_BG),
-            ("KL", "Časovi danas",      self._casovi_danas(),       RED,   RED_BG),
+            (self._ikone["kandidati"],   "Aktivni kandidati", self._aktivni_kandidati(), BLUE,  BLUE_BG),
+            (self._ikone["polozili"],    "Položili",          self._polozili(),           GREEN, GREEN_BG),
+            (self._ikone["instruktori"], "Instruktori",       self._aktivni_instruktori(), AMBER, AMBER_BG),
+            (self._ikone["casovi"],      "Časovi danas",      self._casovi_danas(),       RED,   RED_BG),
         ]
 
-        ikone_simboli = {
-            "U+": "👥",
-            "OK": "✓",
-            "GR": "▲",
-            "KL": "▦",
-        }
-
-        for col, (kljuc, label, vrednost, boja, boja_bg) in enumerate(kartice_data):
-            self._stat_kartica(scroll, ikone_simboli[kljuc], label, vrednost, boja, boja_bg, col)
+        for col, (ikona, label, vrednost, boja, boja_bg) in enumerate(kartice_data):
+            self._stat_kartica(scroll, ikona, label, vrednost, boja, boja_bg, col)
 
         donji = ctk.CTkFrame(scroll, fg_color="transparent")
         donji.grid(row=1, column=0, columnspan=4, sticky="ew", pady=(24, 0))
@@ -104,13 +116,18 @@ class DashboardView(ctk.CTkFrame):
         inner = ctk.CTkFrame(kartica, fg_color="transparent")
         inner.pack(fill="both", expand=True, padx=24, pady=24)
 
+        # Ikonica u obojenoj kutiji
         ikon_frame = ctk.CTkFrame(inner, width=48, height=48,
                                   fg_color=boja_bg, corner_radius=8)
         ikon_frame.pack(anchor="w")
         ikon_frame.pack_propagate(False)
-        ctk.CTkLabel(ikon_frame, text=ikona,
-                     font=ctk.CTkFont(size=20, weight="bold"),
-                     text_color=boja).pack(expand=True)
+
+        if ikona:
+            ctk.CTkLabel(ikon_frame, text="", image=ikona).pack(expand=True)
+        else:
+            ctk.CTkLabel(ikon_frame, text="●",
+                         font=ctk.CTkFont(size=20),
+                         text_color=boja).pack(expand=True)
 
         ctk.CTkLabel(inner, text=vrednost,
                      font=ctk.CTkFont(family="Arial", size=36, weight="bold"),

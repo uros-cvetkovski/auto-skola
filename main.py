@@ -1,4 +1,6 @@
 import customtkinter as ctk
+from PIL import Image
+import os
 from database.db_manager import init_db
 from views.dashboard_view import DashboardView
 from views.kandidati_view import KandidatiView
@@ -18,6 +20,15 @@ TEXT_PRIMARY   = "#ffffff"
 TEXT_SECONDARY = "#94a3b8"
 TEXT_MUTED     = "#64748b"
 
+ICONS_DIR = os.path.join(os.path.dirname(__file__), "assets", "icons")
+
+def load_icon(name: str, size=(20, 20)):
+    path = os.path.join(ICONS_DIR, f"{name}.png")
+    if not os.path.exists(path):
+        return None
+    img = Image.open(path).convert("RGBA")
+    return ctk.CTkImage(light_image=img, dark_image=img, size=size)
+
 
 class AutoSkolaApp(ctk.CTk):
     def __init__(self):
@@ -28,10 +39,19 @@ class AutoSkolaApp(ctk.CTk):
         self.configure(fg_color=BG_PRIMARY)
 
         init_db()
-
         self._aktivni_kljuc = None
         self._dugmad = {}
         self._view_instanci = {}
+
+        # Učitaj ikonice
+        self._ikone = {
+            "logo":        load_icon("logo", size=(22, 22)),
+            "dashboard":   load_icon("dashboard"),
+            "kandidati":   load_icon("kandidati"),
+            "instruktori": load_icon("instruktori"),
+            "casovi":      load_icon("casovi"),
+            "ispiti":      load_icon("ispiti"),
+        }
 
         self._build_ui()
         self._prikazi("dashboard")
@@ -50,14 +70,17 @@ class AutoSkolaApp(ctk.CTk):
 
         # Logo
         logo_frame = ctk.CTkFrame(self._sidebar, fg_color="transparent")
-        logo_frame.grid(row=0, column=0, sticky="ew", padx=24, pady=(24, 0))
+        logo_frame.grid(row=0, column=0, sticky="ew", padx=24, pady=(28, 0))
 
         ikonica_frame = ctk.CTkFrame(logo_frame, width=40, height=40,
                                      fg_color=ACCENT_BLUE, corner_radius=8)
         ikonica_frame.pack(side="left")
         ikonica_frame.pack_propagate(False)
-        ctk.CTkLabel(ikonica_frame, text="🚗",
-                     font=ctk.CTkFont(size=20)).pack(expand=True)
+
+        if self._ikone["logo"]:
+            ctk.CTkLabel(ikonica_frame, text="", image=self._ikone["logo"]).pack(expand=True)
+        else:
+            ctk.CTkLabel(ikonica_frame, text="🚗", font=ctk.CTkFont(size=18)).pack(expand=True)
 
         ctk.CTkLabel(logo_frame, text="Auto Škola",
                      font=ctk.CTkFont(family="Arial", size=18, weight="bold"),
@@ -72,11 +95,11 @@ class AutoSkolaApp(ctk.CTk):
         nav_frame.grid(row=2, column=0, sticky="nsew", padx=16)
 
         stavke = [
-            ("dashboard",   "🏠   Dashboard"),
-            ("kandidati",   "👤   Kandidati"),
-            ("instruktori", "👨‍🏫   Instruktori"),
-            ("casovi",      "📅   Časovi"),
-            ("ispiti",      "📝   Ispiti"),
+            ("dashboard",   "Dashboard"),
+            ("kandidati",   "Kandidati"),
+            ("instruktori", "Instruktori"),
+            ("casovi",      "Časovi"),
+            ("ispiti",      "Ispiti"),
         ]
 
         self._view_klase = {
@@ -88,9 +111,12 @@ class AutoSkolaApp(ctk.CTk):
         }
 
         for kljuc, tekst in stavke:
+            ikona = self._ikone.get(kljuc)
             btn = ctk.CTkButton(
                 nav_frame,
-                text=tekst,
+                text="  " + tekst,
+                image=ikona,
+                compound="left",        # ikonica levo od teksta
                 anchor="w",
                 fg_color="transparent",
                 hover_color=BORDER_DARK,

@@ -11,6 +11,7 @@ class Kandidat:
         self.email = None
         self.datum_upisa = None
         self.status = "aktivan"
+        self.kategorija = "B"
 
     @staticmethod
     def get_all():
@@ -54,14 +55,14 @@ class Kandidat:
         conn = get_connection()
         if self.id is None:
             cur = conn.execute(
-                "INSERT INTO kandidati (ime, prezime, jmbg, telefon, email, datum_upisa, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (self.ime, self.prezime, self.jmbg, self.telefon, self.email, self.datum_upisa, self.status)
+                "INSERT INTO kandidati (ime, prezime, jmbg, telefon, email, datum_upisa, status, kategorija) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (self.ime, self.prezime, self.jmbg, self.telefon, self.email, self.datum_upisa, self.status, self.kategorija)
             )
             self.id = cur.lastrowid
         else:
             conn.execute(
-                "UPDATE kandidati SET ime=?, prezime=?, jmbg=?, telefon=?, email=?, datum_upisa=?, status=? WHERE id=?",
-                (self.ime, self.prezime, self.jmbg, self.telefon, self.email, self.datum_upisa, self.status, self.id)
+                "UPDATE kandidati SET ime=?, prezime=?, jmbg=?, telefon=?, email=?, datum_upisa=?, status=?, kategorija=? WHERE id=?",
+                (self.ime, self.prezime, self.jmbg, self.telefon, self.email, self.datum_upisa, self.status, self.kategorija, self.id)
             )
         conn.commit()
         conn.close()
@@ -83,4 +84,8 @@ class Kandidat:
         k.email = row["email"]
         k.datum_upisa = row["datum_upisa"]
         k.status = row["status"]
+        try:
+            k.kategorija = row["kategorija"] or "B"
+        except Exception:
+            k.kategorija = "B"
         return k

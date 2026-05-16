@@ -57,6 +57,10 @@ auto_skola/
 └── assets/
     └── icons/
 ```
+## Screenshots
+
+![Dashboard](assets/icons/dashboard_screenshot.png)
+![Kandidati](assets/icons/kandidati_screenshot.png)
 
 ## Autor
 

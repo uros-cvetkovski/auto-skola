@@ -64,4 +64,4 @@ auto_skola/
 
 ## Autor
 
-**Uroš Cvetkovksi** — [github.com/uros-cvetkovski](https://github.com/uros-cvetkovski)
+**Uroš Cvetkovski** — [github.com/uros-cvetkovski](https://github.com/uros-cvetkovski)

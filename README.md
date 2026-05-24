@@ -1,35 +1,35 @@
-# Auto Škola — Desktop Aplikacija
+# Driving School — Desktop Application
 
-Desktop aplikacija za upravljanje poslovanjem auto škole, razvijena kao studentski projekat.
+A desktop application for managing driving school operations, developed as a student project.
 
-## O projektu
+## About
 
-Aplikacija omogućava evidenciju kandidata, instruktora, časova i ispita sa modernim dark UI-em.
+The application provides records management for candidates, instructors, lessons, and exams with a modern dark UI.
 
-## Tehnologije
+## Technologies
 
 - **Python 3.11**
-- **CustomTkinter** — moderni GUI framework
-- **SQLite** — lokalna baza podataka
-- **Pillow** — obrada slika i ikonica
+- **CustomTkinter** — modern GUI framework
+- **SQLite** — local database
+- **Pillow** — image and icon processing
 
-## Funkcionalnosti
+## Features
 
-- **Dashboard** — pregled ključnih statistika
-- **Kandidati** — dodavanje, pregled i upravljanje kandidatima
-- **Instruktori** — evidencija instruktora i kategorija
-- **Časovi** — zakazivanje i praćenje časova vožnje
-- **Ispiti** — evidencija teorijskih i praktičnih ispita
+- **Dashboard** — overview of key statistics
+- **Candidates** — adding, viewing, and managing candidates
+- **Instructors** — instructor and category records
+- **Lessons** — scheduling and tracking driving lessons
+- **Exams** — records for theory and practical exams
 
-## Pokretanje
+## Getting Started
 
-### Preduslovi
+### Prerequisites
 
 ```bash
 pip install customtkinter pillow
 ```
 
-### Pokretanje aplikacije
+### Running the Application
 
 ```bash
 git clone https://github.com/uros-cvetkovski/auto-skola.git
@@ -37,13 +37,13 @@ cd auto-skola
 python main.py
 ```
 
-## Struktura projekta
+## Project Structure
 
 ```
 auto_skola/
-├── main.py              # Ulazna tačka aplikacije
+├── main.py              # Application entry point
 ├── database/
-│   └── db_manager.py    # Upravljanje SQLite bazom
+│   └── db_manager.py    # SQLite database management
 ├── models/
 │   ├── kandidat.py
 │   ├── instruktor.py
@@ -57,11 +57,12 @@ auto_skola/
 └── assets/
     └── icons/
 ```
+
 ## Screenshots
 
 ![Dashboard](assets/icons/dashboard_screenshot.png)
-![Kandidati](assets/icons/kandidati_screenshot.png)
+![Candidates](assets/icons/kandidati_screenshot.png)
 
-## Autor
+## Author
 
 **Uroš Cvetkovski** — [github.com/uros-cvetkovski](https://github.com/uros-cvetkovski)
